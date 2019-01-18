@@ -1,70 +1,124 @@
-import React, { Component } from 'react';
-import './App.css';
+import React, { Component } from 'react'
+import './App.css'
+import Dropdown from './Dropdown.js'
+import Results from './Results.js'
+
 
 class App extends Component {
   constructor(props) {
     super(props)
     this.state = {
-      locationText: '',
-      lat: null,
-      long: null,
+      locationText: 'Finding your location...',
+      data: '',
+      lat: '',
+      long: '',
+      section: 'food',
+      radius: 1000,
+      inputValue: ''
     }
   }
 
-componentDidMount() {
-  this.getLocation();
-}
-
-getLocation = ()=> {
-  if(navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(this.updatePosition, this.handleDecline);
-  } else {
-    this.handleNoGeo();
+  componentDidMount() {
+    this.getLocation()
   }
-}
 
-updatePosition = (position)=> {
-  this.setState({
-    lat: position.coords.latitude,
-    long: position.coords.longitude
-  })
-  this.getResponse();
-}
+  getLocation=()=> {
+    if(navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(this.updatePosition, this.handleDecline)
+    } else {
+      this.handleNoGeo()
+    }
+  }
 
-handleDecline = (error)=> {
-  this.setState({locationText: 'We couldn\'t find your location. Please enter city name.'})
-}
+  updatePosition=(position)=> {
+    this.setState({
+      lat: position.coords.latitude,
+      long: position.coords.longitude
+    })
+    this.getResponse()
+  }
 
-getResponse() {
-  fetch('https://api.foursquare.com/v2/venues/explore?client_id=FKCFZTAEROJJDMGZSLU15CJ4ACT0PO2CNRPIROXIDRS10Q3X&client_secret=2MJEL0S4I31QEIRXBIHFHX5ILUCBFUSIADVZ0C4LJ0YEG3LK&v=20180323&limit=1&ll='+this.state.lat+','+this.state.long+'&query=coffee')
-  .then((response)=> {
-    return(response.json());
-  })
-  .then((response)=> {
-    console.log(response.response.headerFullLocation)
-    this.setState({locationText: 'Welcome to ' + response.response.headerFullLocation})
-  })
-  .catch(function(error) {
-    console.log(error)
-  });
-}
+  handleDecline=(error)=> {
+    this.setState({locationText: 'We couldn\'t find your location. Please enter city name.'})
+  }
 
-handleNoGeo = ()=> {
-  this.setState({locationText: 'Geolocation is not supported by this browser, please enter city name.'})
-}
+  getResponse() {
+    fetch('https://api.foursquare.com/v2/venues/explore?client_id=Z2LMK4D5LJHTVCMEO2G0OGOLBLSUMSV1BQNPLK45XP4TT0JV&client_secret=NHOLAPTGQ2S1GDWBMZDWVYIATTWUBJGMPE4TPMBTEJCJWR23&v=20180323&limit=10&ll='+this.state.lat+','+this.state.long+'&intent=browse&radius='+ this.state.radius +'&section='+this.state.section)
+    .then((response)=> {
+      return(response.json());
+    })
+    .then((response)=> {
+      this.setState({
+        locationText: 'Welcome to ' + response.response.headerFullLocation,
+        data: response.response.groups[0].items
+      })
+    })
+    .catch(function(error) {
+      console.log(error)
+    });
+  }
 
-handleEnter() {
-  window.location.href='https://foursquare.com/oauth2/authenticate?client_id=FKCFZTAEROJJDMGZSLU15CJ4ACT0PO2CNRPIROXIDRS10Q3X&response_type=token&redirect_uri=https://devinmarieb.github.io/foursquare/'
-}
+  updateResponse() {
+    fetch('https://api.foursquare.com/v2/venues/explore?client_id=Z2LMK4D5LJHTVCMEO2G0OGOLBLSUMSV1BQNPLK45XP4TT0JV&client_secret=NHOLAPTGQ2S1GDWBMZDWVYIATTWUBJGMPE4TPMBTEJCJWR23&v=20180323&limit=10&near='+this.state.inputValue+'&intent=browse&radius='+ this.state.radius +'&section='+this.state.section)
+    .then((response)=> {
+      return(response.json());
+    })
+    .then((response)=> {
+      this.setState({
+        locationText: 'Welcome to ' + response.response.headerFullLocation,
+        data: response.response.groups[0].items
+      })
+    })
+    .catch(function(error) {
+      console.log(error)
+    });
+  }
+
+  handleNoGeo=()=> {
+    this.setState({locationText: 'Geolocation is not supported by this browser, please enter city name.'})
+  }
+
+  updateUserType=(event)=> {
+    this.setState({section: event})
+  }
+
+  updateUserRadius=(event)=> {
+    this.setState({radius: event})
+    console.log(this.state.radius)
+  }
+
+  updateValue=(event)=> {
+    this.setState({inputValue: event.target.value})
+  }
+
 
   render() {
+    const { locationText, inputValue, data } = this.state
     return (
-      <div className="App">
-        <h1>Foursquare Code Challenge</h1>
-        // <p id="location">{this.state.locationText}</p>
-        <button onClick={()=> this.handleEnter()}>Enter</button>
+      <div className='app'>
+        <div className='container'>
+          <h1 className='title'>{locationText}</h1>
+          <p className='subtitle'>Search your location or choose another city:</p>
+          <input className='input' value={inputValue} onChange={this.updateValue}/>
+          <div className='dropdown-container'>
+            <p className='dropdown-category'>Category:</p>
+            <Dropdown
+              userSelect={this.state.section}
+              getUserSelection={this.updateUserType.bind(this)}
+              options={[{text: 'Food', value: 'food'}, {text: 'Drinks', value: 'drinks'}, {text: 'Coffee', value: 'coffee'}, {text: 'Shops', value: 'shops'}, {text: 'Arts', value: 'arts'}, {text: 'Outdoors', value: 'outdoors'}, {text: 'Sights', value: 'sights'}, {text: 'Trending', value: 'trending'}, {text: 'Top Picks', value: 'topPicks'}]}
+            />
+            <p className='dropdown-category'>Distance:</p>
+            <Dropdown
+              userSelect={this.state.radius}
+              getUserSelection={this.updateUserRadius.bind(this)}
+              options={[{text: '1,000m', value: 1000}, {text: '5,000m', value: 5000}, {text: '10,000m', value: 10000}]}
+            />
+            <input className='button' type='button' value='Search' onClick={()=> this.updateResponse()}/>
+          </div>
+          <Results data={data}/>
+        </div>
       </div>
-    );
+    )
   }
 }
 
